@@ -1,30 +1,31 @@
 # Reference: https://benanderson.work/blog/agentic-search-for-dummies/
 
-from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel
-import argparse
-from urllib.parse import urlparse, quote_plus
+from typing import TypedDict
+from urllib.parse import quote_plus
 import requests
 from markdownify import markdownify as md
-import sys, os
+from zeromcp import McpServer
+import os
 
+# Environment variables are automatically loaded from .env by pyauto-dotenv
 READECK_URL = os.environ.get("READECK_URL", "").strip().rstrip("/")
 if not READECK_URL:
-    sys.stderr.write("READECK_URL is not set\n")
-    sys.exit(1)
+    raise ValueError("READECK_URL is not set in environment or .env file")
 
 READECK_TOKEN = os.environ.get("READECK_TOKEN", "").strip()
 if not READECK_TOKEN:
-    sys.stderr.write("READECK_TOKEN is not set\n")
-    sys.exit(1)
+    raise ValueError("READECK_TOKEN is not set in environment or .env file")
 
-mcp = FastMCP(name="readeck-mcp")
+mcp = McpServer(name="readeck-mcp", version="0.1.0")
 
-def Bookmark(TypedDict):
+
+class Bookmark(TypedDict):
     id: str
     title: str
     description: str
     url: str
+
 
 def list_bookmarks(search: str, offset: int, limit: int) -> list[Bookmark]:
     url = f"{READECK_URL}/api/bookmarks?search={quote_plus(search)}&has_errors=false&offset={offset}&limit={limit}"
@@ -32,10 +33,12 @@ def list_bookmarks(search: str, offset: int, limit: int) -> list[Bookmark]:
     response.raise_for_status()
     return response.json()
 
+
 class SearchResult(BaseModel):
     title: str
     description: str
     document_id: str
+
 
 def search(query: str, limit: int = 10) -> list[SearchResult]:
     """
@@ -51,7 +54,8 @@ def search(query: str, limit: int = 10) -> list[SearchResult]:
         for bookmark in bookmarks
     ]
 
-@mcp.tool()
+
+@mcp.tool
 def initial_search(keywords: list[str], limit: int = 10) -> dict[str, list[SearchResult]]:
     """
     Search the knowledge base for articles that match single keywords.
@@ -65,7 +69,8 @@ def initial_search(keywords: list[str], limit: int = 10) -> dict[str, list[Searc
         for keyword in keywords
     }
 
-@mcp.tool()
+
+@mcp.tool
 def adjacent_search(keywords: list[str], limit: int = 10) -> dict[str, list[SearchResult]]:
     """
     Search the knowledge base for articles that match the keywords.
@@ -76,11 +81,13 @@ def adjacent_search(keywords: list[str], limit: int = 10) -> dict[str, list[Sear
         for keyword in keywords
     }
 
+
 class Document(BaseModel):
     content: str
     citation_url: str
 
-@mcp.tool()
+
+@mcp.tool
 def read(document_ids: list[str]) -> dict[str, Document]:
     """
     Read an article from the knowledge base. Make sure to use the citation_url to cite the article in your response.
@@ -97,20 +104,15 @@ def read(document_ids: list[str]) -> dict[str, Document]:
         )
     return results
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=mcp.name)
-    parser.add_argument("--transport", type=str, default="stdio", help="Transport protocol to use (stdio or http://127.0.0.1:5001)")
-    args = parser.parse_args()
-    try:
-        if args.transport == "stdio":
-            mcp.run(transport="stdio")
-        else:
-            url = urlparse(args.transport)
-            mcp.settings.host = url.hostname
-            mcp.settings.port = url.port
-            # NOTE: npx @modelcontextprotocol/inspector for debugging
-            print(f"{mcp.name} availabile at http://{mcp.settings.host}:{mcp.settings.port}/sse")
-            mcp.settings.log_level = "INFO"
-            mcp.run(transport="sse")
-    except KeyboardInterrupt:
-        pass
+    import sys
+    
+    # Run in stdio mode by default (for MCP clients)
+    # Or use: python readeck-mcp.py serve <host> <port> for HTTP mode
+    if len(sys.argv) > 1 and sys.argv[1] == "serve":
+        host = sys.argv[2] if len(sys.argv) > 2 else "127.0.0.1"
+        port = int(sys.argv[3]) if len(sys.argv) > 3 else 5001
+        mcp.serve(host, port)
+    else:
+        mcp.stdio()
