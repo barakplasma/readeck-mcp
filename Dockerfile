@@ -3,6 +3,10 @@
 # First, build the application in the `/app` directory.
 # See `Dockerfile` for details.
 FROM ghcr.io/astral-sh/uv:python3.11-alpine AS builder
+
+# Install build dependencies for compiling Rust extensions (pydantic-core)
+RUN apk add --no-cache gcc musl-dev cargo
+
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
 # Omit development dependencies
