@@ -23,15 +23,18 @@ COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked
 
+# Verify the build by validating imports and tool registration
+RUN python readeck-mcp.py validate
 
-# Then, use a final image without uv
-FROM python:3.11-slim-bookworm
-# It is important to use the image that matches the builder (python3.11),
+
+# Then, use a final image without uv (matching Alpine base)
+FROM python:3.11-alpine
+# It is important to use the image that matches the builder (python3.11-alpine),
 # as the path to the Python executable must be the same.
 
-# Setup a non-root user
-RUN groupadd --system --gid 999 nonroot \
- && useradd --system --gid 999 --uid 999 --create-home nonroot
+# Setup a non-root user (Alpine syntax)
+RUN addgroup -g 999 -S nonroot \
+ && adduser -u 999 -S -G nonroot -h /home/nonroot nonroot
 
 # Copy the application from the builder
 COPY --from=builder --chown=nonroot:nonroot /app /app
@@ -44,6 +47,10 @@ USER nonroot
 
 # Use `/app` as the working directory
 WORKDIR /app
+
+# Add healthcheck (SSE endpoint should respond with connection)
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/sse || exit 1
 
 # Run the MCP server in HTTP mode by default
 # For stdio mode (desktop clients), run: docker run <image> python readeck-mcp.py

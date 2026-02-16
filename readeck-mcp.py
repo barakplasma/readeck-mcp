@@ -9,12 +9,16 @@ from zeromcp import McpServer
 import os
 
 # Environment variables are automatically loaded from .env by pyauto-dotenv
+# Allow validate command to run without env vars for build-time checks
+import sys
+_is_validate = len(sys.argv) > 1 and sys.argv[1] == "validate"
+
 READECK_URL = os.environ.get("READECK_URL", "").strip().rstrip("/")
-if not READECK_URL:
+if not READECK_URL and not _is_validate:
     raise ValueError("READECK_URL is not set in environment or .env file")
 
 READECK_TOKEN = os.environ.get("READECK_TOKEN", "").strip()
-if not READECK_TOKEN:
+if not READECK_TOKEN and not _is_validate:
     raise ValueError("READECK_TOKEN is not set in environment or .env file")
 
 mcp = McpServer(name="readeck-mcp", version="0.1.0")
@@ -107,12 +111,23 @@ def read(document_ids: list[str]) -> dict[str, Document]:
 
 if __name__ == "__main__":
     import sys
-    
-    # Run in stdio mode by default (for MCP clients)
-    # Or use: python readeck-mcp.py serve <host> <port> for HTTP mode
+
+    if len(sys.argv) > 1 and sys.argv[1] == "validate":
+        # Validation mode for build-time checks (doesn't require env vars)
+        print("✓ Imports successful")
+        print(f"✓ MCP server initialized: {mcp.name} v{mcp.version}")
+        print(f"✓ Tools registered: {len(mcp._tools)}")
+        for tool_name in mcp._tools:
+            print(f"  - {tool_name}")
+        sys.exit(0)
+
+    # Normal runtime - require env vars
     if len(sys.argv) > 1 and sys.argv[1] == "serve":
         host = sys.argv[2] if len(sys.argv) > 2 else "127.0.0.1"
         port = int(sys.argv[3]) if len(sys.argv) > 3 else 5001
+        print(f"Starting MCP server on {host}:{port}")
+        print(f"Readeck URL: {READECK_URL}")
         mcp.serve(host, port, background=False)
     else:
+        # Run in stdio mode by default (for MCP clients)
         mcp.stdio()
