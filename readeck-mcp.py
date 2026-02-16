@@ -113,6 +113,6 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "serve":
         host = sys.argv[2] if len(sys.argv) > 2 else "127.0.0.1"
         port = int(sys.argv[3]) if len(sys.argv) > 3 else 5001
-        mcp.serve(host, port)
+        mcp.serve(host, port, background=False)
     else:
         mcp.stdio()

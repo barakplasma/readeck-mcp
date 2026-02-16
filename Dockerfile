@@ -46,5 +46,6 @@ USER nonroot
 # Use `/app` as the working directory
 WORKDIR /app
 
-# Run the FastAPI application by default
-CMD ["uv", "run", "readeck-mcp.py"]
+# Run the MCP server in HTTP mode by default
+# For stdio mode (desktop clients), run: docker run <image> uv run readeck-mcp.py
+CMD ["uv", "run", "readeck-mcp.py", "serve", "0.0.0.0", "8080"]
