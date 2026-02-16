@@ -25,10 +25,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 
 # Then, use a final image without uv
-FROM python:3.12-slim-bookworm
-# It is important to use the image that matches the builder, as the path to the
-# Python executable must be the same, e.g., using `python:3.11-slim-bookworm`
-# will fail.
+FROM python:3.11-slim-bookworm
+# It is important to use the image that matches the builder (python3.11),
+# as the path to the Python executable must be the same.
 
 # Setup a non-root user
 RUN groupadd --system --gid 999 nonroot \
@@ -47,5 +46,5 @@ USER nonroot
 WORKDIR /app
 
 # Run the MCP server in HTTP mode by default
-# For stdio mode (desktop clients), run: docker run <image> uv run readeck-mcp.py
-CMD ["uv", "run", "readeck-mcp.py", "serve", "0.0.0.0", "8080"]
+# For stdio mode (desktop clients), run: docker run <image> python readeck-mcp.py
+CMD ["python", "readeck-mcp.py", "serve", "0.0.0.0", "8080"]
