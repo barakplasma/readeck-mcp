@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked
 
 # Verify the build by validating imports and tool registration
-RUN python readeck-mcp.py validate
+RUN uv run readeck-mcp.py validate
 
 
 # Then, use a final image without uv (matching Alpine base)
@@ -51,4 +51,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Run the MCP server in HTTP mode by default
 # For stdio mode (desktop clients), run: docker run <image> python readeck-mcp.py
-CMD ["python", "readeck-mcp.py", "serve", "0.0.0.0", "8080"]
+CMD [".venv/bin/python", "readeck-mcp.py", "serve", "0.0.0.0", "8080"]
