@@ -116,8 +116,8 @@ if __name__ == "__main__":
         # Validation mode for build-time checks (doesn't require env vars)
         print("✓ Imports successful")
         print(f"✓ MCP server initialized: {mcp.name} v{mcp.version}")
-        print(f"✓ Tools registered: {len(mcp._tools)}")
-        for tool_name in mcp._tools:
+        print(f"✓ Tools registered: {len(mcp.tools)}")
+        for tool_name in mcp.tools:
             print(f"  - {tool_name}")
         sys.exit(0)
 
