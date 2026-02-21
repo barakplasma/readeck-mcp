@@ -36,18 +36,11 @@ FROM python:3.11-alpine
 # It is important to use the image that matches the builder (python3.11-alpine),
 # as the path to the Python executable must be the same.
 
-# Setup a non-root user (Alpine syntax)
-RUN addgroup -g 999 -S nonroot \
- && adduser -u 999 -S -G nonroot -h /home/nonroot nonroot
-
 # Copy the application from the builder
 COPY --from=builder --chown=nonroot:nonroot /app /app
 
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
-
-# Use the non-root user to run our application
-USER nonroot
 
 # Use `/app` as the working directory
 WORKDIR /app
